@@ -1,8 +1,9 @@
 {
   "servers": {
-    "github": {
+    "weathermcpserver": {
       "type": "http",
-      "url": "https://api.githubcopilot.com/mcp/"
+      "url": "https://ce57541d509.ngrok-free.app",
+      "description": "Weather API Server"
     }
   }
 }
