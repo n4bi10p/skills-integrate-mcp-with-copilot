@@ -1,8 +1,42 @@
+
 document.addEventListener("DOMContentLoaded", () => {
   const activitiesList = document.getElementById("activities-list");
   const activitySelect = document.getElementById("activity");
   const signupForm = document.getElementById("signup-form");
   const messageDiv = document.getElementById("message");
+  const loginBtn = document.getElementById("login-btn");
+  const logoutBtn = document.getElementById("logout-btn");
+  const adminStatus = document.getElementById("admin-status");
+
+  let teacherCredentials = null;
+
+  function updateAdminUI() {
+    if (teacherCredentials) {
+      adminStatus.textContent = `Logged in as: ${teacherCredentials.username}`;
+      loginBtn.classList.add("hidden");
+      logoutBtn.classList.remove("hidden");
+    } else {
+      adminStatus.textContent = "Not logged in";
+      loginBtn.classList.remove("hidden");
+      logoutBtn.classList.add("hidden");
+    }
+  }
+
+  loginBtn.addEventListener("click", () => {
+    const username = prompt("Enter teacher username:");
+    if (!username) return;
+    const password = prompt("Enter password:");
+    if (!password) return;
+    teacherCredentials = { username, password };
+    updateAdminUI();
+  });
+
+  logoutBtn.addEventListener("click", () => {
+    teacherCredentials = null;
+    updateAdminUI();
+  });
+
+  updateAdminUI();
 
   // Function to fetch activities from API
   async function fetchActivities() {
@@ -69,17 +103,22 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Handle unregister functionality
   async function handleUnregister(event) {
+    if (!teacherCredentials) {
+      alert("You must be logged in as a teacher to unregister students.");
+      return;
+    }
     const button = event.target;
     const activity = button.getAttribute("data-activity");
     const email = button.getAttribute("data-email");
 
     try {
       const response = await fetch(
-        `/activities/${encodeURIComponent(
-          activity
-        )}/unregister?email=${encodeURIComponent(email)}`,
+        `/activities/${encodeURIComponent(activity)}/unregister?email=${encodeURIComponent(email)}`,
         {
           method: "DELETE",
+          headers: {
+            Authorization: "Basic " + btoa(`${teacherCredentials.username}:${teacherCredentials.password}`),
+          },
         }
       );
 
@@ -88,17 +127,12 @@ document.addEventListener("DOMContentLoaded", () => {
       if (response.ok) {
         messageDiv.textContent = result.message;
         messageDiv.className = "success";
-
-        // Refresh activities list to show updated participants
         fetchActivities();
       } else {
         messageDiv.textContent = result.detail || "An error occurred";
         messageDiv.className = "error";
       }
-
       messageDiv.classList.remove("hidden");
-
-      // Hide message after 5 seconds
       setTimeout(() => {
         messageDiv.classList.add("hidden");
       }, 5000);
@@ -114,16 +148,22 @@ document.addEventListener("DOMContentLoaded", () => {
   signupForm.addEventListener("submit", async (event) => {
     event.preventDefault();
 
+    if (!teacherCredentials) {
+      alert("You must be logged in as a teacher to sign up students.");
+      return;
+    }
+
     const email = document.getElementById("email").value;
     const activity = document.getElementById("activity").value;
 
     try {
       const response = await fetch(
-        `/activities/${encodeURIComponent(
-          activity
-        )}/signup?email=${encodeURIComponent(email)}`,
+        `/activities/${encodeURIComponent(activity)}/signup?email=${encodeURIComponent(email)}`,
         {
           method: "POST",
+          headers: {
+            Authorization: "Basic " + btoa(`${teacherCredentials.username}:${teacherCredentials.password}`),
+          },
         }
       );
 
@@ -133,17 +173,12 @@ document.addEventListener("DOMContentLoaded", () => {
         messageDiv.textContent = result.message;
         messageDiv.className = "success";
         signupForm.reset();
-
-        // Refresh activities list to show updated participants
         fetchActivities();
       } else {
         messageDiv.textContent = result.detail || "An error occurred";
         messageDiv.className = "error";
       }
-
       messageDiv.classList.remove("hidden");
-
-      // Hide message after 5 seconds
       setTimeout(() => {
         messageDiv.classList.add("hidden");
       }, 5000);
